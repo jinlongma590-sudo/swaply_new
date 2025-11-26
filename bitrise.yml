@@ -1,0 +1,35 @@
+﻿format_version: '11'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+workflows:
+  primary:
+    envs:
+      - FLUTTER_VERSION: '3.19.6'
+    steps:
+      - git-clone@8: {}
+      - flutter-installer@0:
+          inputs:
+            - version: 
+      - cache-pull@2: {}
+      - script@1:
+          title: Flutter pub get
+          inputs:
+            - content: |-
+                flutter --version
+                flutter pub get
+      - script@1:
+          title: iOS build (ipa)
+          inputs:
+            - content: |-
+                cd ios && pod install --repo-update && cd ..
+                flutter build ipa --release --build-number=""
+      - script@1:
+          title: Android build (aab)
+          inputs:
+            - content: |-
+                flutter build appbundle --release --build-number=""
+      - cache-push@2: {}
+trigger_map:
+  - push_branch: main
+    workflow: primary
+  - tag: build-*
+    workflow: primary
