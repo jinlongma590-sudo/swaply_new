@@ -1,7 +1,7 @@
-name: swaply
-description: "Swaply – marketplace app"
+﻿name: swaply
+description: "Swaply 鈥?marketplace app"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.3.4 <4.0.0'
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # —— 与你现有代码匹配、在 3.19.6 下稳定的版本 ——
+  # 鈥斺€?涓庝綘鐜版湁浠ｇ爜鍖归厤銆佸湪 3.19.6 涓嬬ǔ瀹氱殑鐗堟湰 鈥斺€?
   supabase_flutter: 2.5.8
   shared_preferences: 2.2.3
   provider: 6.1.2
@@ -37,7 +37,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 3.0.2
-  # 固定旧链路，避免 iOS 黑屏
+  # 鍥哄畾鏃ч摼璺紝閬垮厤 iOS 榛戝睆
   flutter_native_splash: 2.4.0
 
 flutter:
@@ -50,3 +50,4 @@ flutter:
     - assets/images/trending_items/item1/
     - assets/images/trending_items/item2/
     - assets/images/trending_items/item3/
+
