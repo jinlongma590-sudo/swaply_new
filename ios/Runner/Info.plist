@@ -64,5 +64,15 @@
 	<!-- Impeller off (鍚屾棫椤圭洰) -->
 	<key>FLTEnableImpeller</key>
 	<false/>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow access to your photo library so you can pick photos for your listings and profile.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow saving photos or videos created in the app to your library (e.g. edited listing media).</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow using the camera to take photos/videos of items you want to sell.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow recording audio when capturing videos for your listings.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow location access to show nearby listings and services.</string>
 </dict>
 </plist>
