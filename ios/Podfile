@@ -1,48 +1,37 @@
-# ----------[ CRITICAL: Flutter & CocoaPods bootstrap ]----------
-# 只用 CDN，避免第三方源干扰
-source 'https://cdn.cocoapods.org/'
+# ios/Podfile  —— Flutter 3.19.x 标准模板（ASCII 引号）
+platform :ios, '13.0'
 
-# 禁用浅克隆（修复 annotated tag 导致的 “is not a commit / unable to read tree”）
-ENV['COCOAPODS_GIT_CLONE_DEPTH'] = '0'
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-# 在 CI 上稳健解析 FLUTTER_ROOT；本地同样适用
-flutter_root = ENV['FLUTTER_ROOT']
-unless flutter_root && File.exist?(flutter_root)
-  # 兼容 flutter doctor -v 输出
-  doctor = `flutter doctor -v 2>/dev/null`
-  match = doctor.lines.find { |l| l.include?('Flutter root') }&.split(':')&.last&.strip
-  flutter_root = match if match && File.exist?(match)
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('Flutter', 'Generated.xcconfig'), __dir__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "Generated.xcconfig must exist. Run 'flutter pub get' first."
+  end
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in Generated.xcconfig. Run 'flutter pub get' first."
 end
-raise "FLUTTER_ROOT not found. Set FLUTTER_ROOT env or ensure `flutter doctor -v` prints Flutter root." unless flutter_root
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
-# ---------------------------------------------------------------
-
-platform :ios, '13.0'
-use_frameworks! :linkage => :static
-use_modular_headers!
-
-install! 'cocoapods', :deterministic_uuids => false
 
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  use_frameworks!
+  use_modular_headers!
 
-  # ⚠️ 如仍遇到外部 Git 源抽风，可临时强行覆盖（先注释，必要时放开）
-  # pod 'SDWebImage', :git => 'https://github.com/SDWebImage/SDWebImage.git', :tag => '5.21.4'
-  # pod 'SDWebImageWebPCoder', :git => 'https://github.com/SDWebImage/SDWebImageWebPCoder.git', :tag => '0.15.0'
-  # pod 'DKImagePickerController', :git => 'https://github.com/zhangao0086/DKImagePickerController.git', :tag => '4.3.4'
-  # pod 'DKPhotoGallery', :git => 'https://github.com/zhangao0086/DKPhotoGallery.git', :tag => '0.0.19'
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
 post_install do |installer|
-  installer.pods_project.targets.each do |t|
-    t.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      # Xcode 15+ 常见设置
-      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
-    end
-  end
-  flutter_additional_ios_build_settings(installer)
+  flutter_additional_ios_build_settings installer
 end
