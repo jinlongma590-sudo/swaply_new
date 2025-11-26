@@ -1,53 +1,49 @@
-﻿version: 0.3
-cli:
-  version: ">= 7.0.0"
-
-env:
-  FLUTTER_CHANNEL: "stable"
-
-ios:
-  cache:
-    disabled: true
-  artifacts:
-    - build/ios/ipa/*.ipa
-
+build:
+  name: Swaply iOS (Flutter)
   steps:
-    - name: Install Flutter $FLUTTER_VERSION
-      run: |
-        git clone --depth 1 -b $FLUTTER_VERSION https://github.com/flutter/flutter.git /opt/flutter
-        echo 'export PATH=/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH' >> $BASH_ENV
-        source $BASH_ENV
-        flutter --version
-        flutter precache --ios
+    - eas/checkout
 
-    - name: Verify signing environment
-      run: |
-        xcrun --sdk iphoneos --show-sdk-version
-        security find-identity -v -p codesigning || true
+    - run:
+        name: Install Flutter $FLUTTER_VERSION
+        shell: /bin/bash -euo pipefail
+        command: |
+          git clone --depth 1 -b $FLUTTER_VERSION https://github.com/flutter/flutter.git /opt/flutter
+          echo 'export PATH=/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:$PATH' >> $BASH_ENV
+          source $BASH_ENV
+          flutter --version
+          flutter precache --ios
 
-    - name: Flutter pub get
-      run: flutter pub get
+    - run:
+        name: Flutter pub get
+        command: flutter pub get
 
-    - name: CocoaPods install
-      workingDirectory: ios
-      run: |
-        pod repo update
-        pod install
+    - run:
+        name: CocoaPods install
+        working_directory: ios
+        command: |
+          pod repo update
+          pod install
 
-    - name: Normalize line endings
-      run: |
-        find ios -type f -name "*.sh" -print0 | xargs -0 dos2unix || true
-        dos2unix ios/Flutter/*.sh || true
+    - run:
+        name: Normalize line endings (best-effort)
+        command: |
+          command -v dos2unix >/dev/null 2>&1 && { find ios -type f -name "*.sh" -print0 | xargs -0 dos2unix; dos2unix ios/Flutter/*.sh || true; } || true
 
-    - name: Guard ExportOptions path
-      run: |
-        if [ ! -f ios/Runner/ExportOptions.plist ]; then
-          echo "❌ ios/Runner/ExportOptions.plist not found. Please add it."; exit 1;
-        fi
+    - run:
+        name: Guard ExportOptions.plist path
+        command: |
+          if [ ! -f ios/Runner/ExportOptions.plist ]; then
+            echo "❌ ios/Runner/ExportOptions.plist not found."; exit 1;
+          fi
 
-    - name: Build IPA (flutter)
-      run: |
-        flutter build ipa \
-          --release \
-          --export-options-plist=ios/Runner/ExportOptions.plist
-        ls -lah build/ios/ipa
+    - run:
+        name: Build IPA
+        command: |
+          flutter build ipa --release --export-options-plist=ios/Runner/ExportOptions.plist
+          ls -lah build/ios/ipa
+
+    - eas/upload_artifact:
+        name: Upload IPA
+        inputs:
+          path: build/ios/ipa/*.ipa
+          type: application-archive

@@ -1,24 +1,27 @@
-﻿{
-  "cli": { "version": ">= 7.0.0" },
-  "build": {
-    "ios-flutter": {
-      "platform": "ios",
-      "credentialsSource": "remote",
-      "ios": { "image": "latest" },
-      "env": {
-        "FLUTTER_VERSION": "3.19.6",
-        "DEVELOPMENT_TEAM": "KKMFJVK8MV",
-        "APP_SCHEME": "Runner"
-      },
-      "config": ".eas/build/ios-flutter.yml"
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "ascAppId": "6754702257",
-        "appleTeamId": "KKMFJVK8MV"
-      }
-    }
-  }
+{
+    "cli":  {
+                "version":  "\u003e= 7.0.0"
+            },
+    "build":  {
+                  "ios-flutter":  {
+                                      "credentialsSource":  "remote",
+                                      "ios":  {
+                                                  "image":  "latest"
+                                              },
+                                      "env":  {
+                                                  "FLUTTER_VERSION":  "3.19.6",
+                                                  "DEVELOPMENT_TEAM":  "KKMFJVK8MV",
+                                                  "APP_SCHEME":  "Runner"
+                                              },
+                                      "config":  "ios-flutter.yml"
+                                  }
+              },
+    "submit":  {
+                   "production":  {
+                                      "ios":  {
+                                                  "ascAppId":  "6754702257",
+                                                  "appleTeamId":  "KKMFJVK8MV"
+                                              }
+                                  }
+               }
 }
