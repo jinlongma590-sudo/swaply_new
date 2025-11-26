@@ -1,0 +1,53 @@
+﻿version: 0.3
+cli:
+  version: ">= 7.0.0"
+
+env:
+  FLUTTER_CHANNEL: "stable"
+
+ios:
+  cache:
+    disabled: true
+  artifacts:
+    - build/ios/ipa/*.ipa
+
+  steps:
+    - name: Install Flutter \
+      run: |
+        git clone --depth 1 -b \ https://github.com/flutter/flutter.git /opt/flutter
+        echo 'export PATH=/opt/flutter/bin:/opt/flutter/bin/cache/dart-sdk/bin:\' >> \
+        source \
+        flutter --version
+        flutter precache --ios
+
+    - name: Verify signing environment
+      run: |
+        xcrun --sdk iphoneos --show-sdk-version
+        security find-identity -v -p codesigning || true
+
+    - name: Flutter pub get
+      run: flutter pub get
+
+    - name: CocoaPods install
+      workingDirectory: ios
+      run: |
+        pod repo update
+        pod install
+
+    - name: Normalize line endings
+      run: |
+        find ios -type f -name "*.sh" -print0 | xargs -0 dos2unix || true
+        dos2unix ios/Flutter/*.sh || true
+
+    - name: Guard ExportOptions path
+      run: |
+        if [ ! -f ios/Runner/ExportOptions.plist ]; then
+          echo "❌ ios/Runner/ExportOptions.plist not found. Please add it."; exit 1;
+        fi
+
+    - name: Build IPA (flutter)
+      run: |
+        flutter build ipa \
+          --release \
+          --export-options-plist=ios/Runner/ExportOptions.plist
+        ls -lah build/ios/ipa

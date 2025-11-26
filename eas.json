@@ -1,0 +1,24 @@
+﻿{
+  "cli": { "version": ">= 7.0.0" },
+  "build": {
+    "ios-flutter": {
+      "platform": "ios",
+      "credentialsSource": "remote",
+      "ios": { "image": "latest" },
+      "env": {
+        "FLUTTER_VERSION": "3.19.6",
+        "DEVELOPMENT_TEAM": "KKMFJVK8MV",
+        "APP_SCHEME": "Runner"
+      },
+      "config": ".eas/build/ios-flutter.yml"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "1234567890",
+        "appleTeamId": "KKMFJVK8MV"
+      }
+    }
+  }
+}
