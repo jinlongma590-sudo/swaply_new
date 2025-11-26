@@ -37,9 +37,19 @@ build:
           fi
 
     - run:
-        name: Build IPA
+        name: Build IPA (verbose)
+        shell: /bin/bash -euo pipefail
         command: |
-          flutter build ipa --release --export-options-plist=ios/Runner/ExportOptions.plist
+          set -euxo pipefail
+          flutter doctor -v
+          flutter --version
+          dart --version
+          xcrun --sdk iphoneos --show-sdk-version
+          echo "==> Checking Xcode scheme:"
+          /usr/libexec/PlistBuddy -c "Print :SchemeUserState" ios/Runner.xcodeproj/xcuserdata/*/xcschemes/xcschememanagement.plist || true
+          echo "==> Begin flutter build ipa"
+          flutter build ipa -v --release --export-options-plist=ios/Runner/ExportOptions.plist
+          echo "==> IPA dir:"
           ls -lah build/ios/ipa
 
     - eas/upload_artifact:
