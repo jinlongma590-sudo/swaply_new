@@ -1,18 +1,16 @@
 # ios/Podfile
 platform :ios, '12.0'
+source 'https://cdn.cocoapods.org/'
 
 require 'json'
 
-# —— 关键：稳健定位 FLUTTER_ROOT，不依赖 Generated.xcconfig 存在 ——
 def locate_flutter_root
-  # 1) 优先用环境变量（我们会在 Bitrise 脚本里注入）
   env_root = ENV['FLUTTER_ROOT']
   if env_root && !env_root.empty? &&
      File.exist?(File.join(env_root, 'packages', 'flutter_tools', 'bin', 'podhelper'))
     return env_root
   end
 
-  # 2) 其次尝试读取 ios/Flutter/Generated.xcconfig（本地或 CI 如果已生成）
   generated = File.expand_path(File.join('Flutter', 'Generated.xcconfig'), __dir__)
   if File.exist?(generated)
     File.foreach(generated) do |line|
@@ -21,13 +19,12 @@ def locate_flutter_root
     end
   end
 
-  # 3) 兜底：用 `which flutter` 的真实路径上溯两级
   which = `bash -lc "command -v flutter"`.strip
-  if !which.empty?
+  unless which.empty?
     real = File.realpath(which) rescue which
-    candidate = File.expand_path('..', File.expand_path('..', File.dirname(real)))
-    if File.exist?(File.join(candidate, 'packages', 'flutter_tools', 'bin', 'podhelper'))
-      return candidate
+    cand = File.expand_path('..', File.expand_path('..', File.dirname(real)))
+    if File.exist?(File.join(cand, 'packages', 'flutter_tools', 'bin', 'podhelper'))
+      return cand
     end
   end
 
@@ -37,20 +34,33 @@ end
 flutter_root = locate_flutter_root
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
-# 标准 Flutter iOS 初始化
 flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
+  # 让 Flutter 自己装插件 Pods
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # =========================
+  # 🔧 HOTFIX：pin 到 commit，绕过坏掉的 tag
+  # 这些 SHA 全部来自你 Bitrise 日志里的 warning 行
+  #   refs/tags/5.21.3  => SDWebImage
+  #   refs/tags/0.15.0  => SDWebImageWebPCoder
+  #   refs/tags/v1.5.0  => DKPhotoGallery
+  # =========================
+  pod 'SDWebImage', :git => 'https://github.com/SDWebImage/SDWebImage.git',
+                    :commit => '7312c9ce5e1987cb6cbf11213b5fc1fc03abe3a8'
+  pod 'SDWebImageWebPCoder', :git => 'https://github.com/SDWebImage/SDWebImageWebPCoder.git',
+                             :commit => 'a572aa094589e8925d384bf308dd21cf7edd1525'
+  pod 'DKPhotoGallery', :git => 'https://github.com/zhangao0086/DKPhotoGallery.git',
+                        :commit => 'f7710292e894c8413edaca4610d11dde843c04fd'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     t.build_configurations.each do |config|
-      # 保底统一到 iOS 12
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
     end
   end
