@@ -1,67 +1,47 @@
-# ios/Podfile
-platform :ios, '12.0'
+# ----------[ CRITICAL: Flutter & CocoaPods bootstrap ]----------
+# 只用 CDN，避免第三方源干扰
 source 'https://cdn.cocoapods.org/'
 
-require 'json'
+# 禁用浅克隆（修复 annotated tag 导致的 “is not a commit / unable to read tree”）
+ENV['COCOAPODS_GIT_CLONE_DEPTH'] = '0'
 
-def locate_flutter_root
-  env_root = ENV['FLUTTER_ROOT']
-  if env_root && !env_root.empty? &&
-     File.exist?(File.join(env_root, 'packages', 'flutter_tools', 'bin', 'podhelper'))
-    return env_root
-  end
-
-  generated = File.expand_path(File.join('Flutter', 'Generated.xcconfig'), __dir__)
-  if File.exist?(generated)
-    File.foreach(generated) do |line|
-      m = line.match(/FLUTTER_ROOT\=(.*)/)
-      return m[1].strip if m
-    end
-  end
-
-  which = `bash -lc "command -v flutter"`.strip
-  unless which.empty?
-    real = File.realpath(which) rescue which
-    cand = File.expand_path('..', File.expand_path('..', File.dirname(real)))
-    if File.exist?(File.join(cand, 'packages', 'flutter_tools', 'bin', 'podhelper'))
-      return cand
-    end
-  end
-
-  raise "Unable to locate FLUTTER_ROOT. Set ENV['FLUTTER_ROOT'] or run `flutter pub get` locally once."
+# 在 CI 上稳健解析 FLUTTER_ROOT；本地同样适用
+flutter_root = ENV['FLUTTER_ROOT']
+unless flutter_root && File.exist?(flutter_root)
+  # 兼容 flutter doctor -v 输出
+  doctor = `flutter doctor -v 2>/dev/null`
+  match = doctor.lines.find { |l| l.include?('Flutter root') }&.split(':')&.last&.strip
+  flutter_root = match if match && File.exist?(match)
 end
+raise "FLUTTER_ROOT not found. Set FLUTTER_ROOT env or ensure `flutter doctor -v` prints Flutter root." unless flutter_root
 
-flutter_root = locate_flutter_root
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+# ---------------------------------------------------------------
+
+platform :ios, '13.0'
+use_frameworks! :linkage => :static
+use_modular_headers!
+
+install! 'cocoapods', :deterministic_uuids => false
 
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks! :linkage => :static
-  use_modular_headers!
-
-  # 让 Flutter 自己装插件 Pods
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
-  # =========================
-  # 🔧 HOTFIX：pin 到 commit，绕过坏掉的 tag
-  # 这些 SHA 全部来自你 Bitrise 日志里的 warning 行
-  #   refs/tags/5.21.3  => SDWebImage
-  #   refs/tags/0.15.0  => SDWebImageWebPCoder
-  #   refs/tags/v1.5.0  => DKPhotoGallery
-  # =========================
-  pod 'SDWebImage', :git => 'https://github.com/SDWebImage/SDWebImage.git',
-                    :commit => '7312c9ce5e1987cb6cbf11213b5fc1fc03abe3a8'
-  pod 'SDWebImageWebPCoder', :git => 'https://github.com/SDWebImage/SDWebImageWebPCoder.git',
-                             :commit => 'a572aa094589e8925d384bf308dd21cf7edd1525'
-  pod 'DKPhotoGallery', :git => 'https://github.com/zhangao0086/DKPhotoGallery.git',
-                        :commit => 'f7710292e894c8413edaca4610d11dde843c04fd'
+  # ⚠️ 如仍遇到外部 Git 源抽风，可临时强行覆盖（先注释，必要时放开）
+  # pod 'SDWebImage', :git => 'https://github.com/SDWebImage/SDWebImage.git', :tag => '5.21.4'
+  # pod 'SDWebImageWebPCoder', :git => 'https://github.com/SDWebImage/SDWebImageWebPCoder.git', :tag => '0.15.0'
+  # pod 'DKImagePickerController', :git => 'https://github.com/zhangao0086/DKImagePickerController.git', :tag => '4.3.4'
+  # pod 'DKPhotoGallery', :git => 'https://github.com/zhangao0086/DKPhotoGallery.git', :tag => '0.0.19'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     t.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # Xcode 15+ 常见设置
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
     end
   end
   flutter_additional_ios_build_settings(installer)
