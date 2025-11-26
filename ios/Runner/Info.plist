@@ -14,10 +14,10 @@
 	<string>swaply</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>1.0.0</string>
+	<key>CFBundleShortVersionString</key><string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleVersion</key><string>$(FLUTTER_BUILD_NUMBER)</string>
 
 	<!-- Deep Links / Custom Schemes (淇濇寔鍘熼」鐩? -->
 	<key>CFBundleURLTypes</key>
