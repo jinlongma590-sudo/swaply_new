@@ -1,5 +1,5 @@
+# ios/Podfile
 platform :ios, '13.0'
-
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -8,28 +8,15 @@ project 'Runner', {
   'Release' => :release,
 }
 
-install! 'cocoapods',
-  :deterministic_uuids => false
+flutter_root = File.expand_path('..', File.dirname(__FILE__))
+load File.join(flutter_root, '.flutter-plugins-dependencies')
 
-def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
-  unless File.exist?(generated_xcode_build_settings_path)
-    raise "Generated.xcconfig must exist. If you're running pod install manually, make sure flutter pub get is executed first"
-  end
-
-  File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/FLUTTER_ROOT\=(.*)/)
-    return matches[1].strip if matches
-  end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try running flutter pub get again."
-end
-
-require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper'), __FILE__)
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks!
+  use_frameworks! :linkage => :static
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
@@ -37,8 +24,12 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |t|
-    t.build_configurations.each do |c|
-      c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    t.build_configurations.each do |config|
+      # 统一最低系统版本 & Swift
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['SWIFT_VERSION'] = '5.0'
+      # 兼容 Xcode 15/16，确保公共头路径可见
+      config.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) $(PODS_ROOT)/Headers/Public'
     end
   end
 end
