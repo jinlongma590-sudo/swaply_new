@@ -1,18 +1,43 @@
 # ios/Podfile
-platform :ios, '13.0'
-ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+platform :ios, '12.0'
 
-project 'Runner', {
-  'Debug' => :debug,
-  'Profile' => :release,
-  'Release' => :release,
-}
+require 'json'
 
-flutter_root = File.expand_path('..', File.dirname(__FILE__))
-load File.join(flutter_root, '.flutter-plugins-dependencies')
+# —— 关键：稳健定位 FLUTTER_ROOT，不依赖 Generated.xcconfig 存在 ——
+def locate_flutter_root
+  # 1) 优先用环境变量（我们会在 Bitrise 脚本里注入）
+  env_root = ENV['FLUTTER_ROOT']
+  if env_root && !env_root.empty? &&
+     File.exist?(File.join(env_root, 'packages', 'flutter_tools', 'bin', 'podhelper'))
+    return env_root
+  end
 
+  # 2) 其次尝试读取 ios/Flutter/Generated.xcconfig（本地或 CI 如果已生成）
+  generated = File.expand_path(File.join('Flutter', 'Generated.xcconfig'), __dir__)
+  if File.exist?(generated)
+    File.foreach(generated) do |line|
+      m = line.match(/FLUTTER_ROOT\=(.*)/)
+      return m[1].strip if m
+    end
+  end
+
+  # 3) 兜底：用 `which flutter` 的真实路径上溯两级
+  which = `bash -lc "command -v flutter"`.strip
+  if !which.empty?
+    real = File.realpath(which) rescue which
+    candidate = File.expand_path('..', File.expand_path('..', File.dirname(real)))
+    if File.exist?(File.join(candidate, 'packages', 'flutter_tools', 'bin', 'podhelper'))
+      return candidate
+    end
+  end
+
+  raise "Unable to locate FLUTTER_ROOT. Set ENV['FLUTTER_ROOT'] or run `flutter pub get` locally once."
+end
+
+flutter_root = locate_flutter_root
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
+# 标准 Flutter iOS 初始化
 flutter_ios_podfile_setup
 
 target 'Runner' do
@@ -25,11 +50,9 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |t|
     t.build_configurations.each do |config|
-      # 统一最低系统版本 & Swift
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-      config.build_settings['SWIFT_VERSION'] = '5.0'
-      # 兼容 Xcode 15/16，确保公共头路径可见
-      config.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) $(PODS_ROOT)/Headers/Public'
+      # 保底统一到 iOS 12
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
     end
   end
+  flutter_additional_ios_build_settings(installer)
 end
